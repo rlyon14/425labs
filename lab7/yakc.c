@@ -4,8 +4,6 @@
 
 #define NULL 0
 #define IDLE_STACKSIZE 256
-#define EVENT_WAIT_ANY 1
-#define EVENT_WAIT_ALL 0
 
 int* YKsave;
 int* YKrestore;
@@ -40,7 +38,7 @@ struct Task* YKRunningTask;
 YKSEM YKsemaphores[MAXSEM];
 struct Task YKtasks[MAXTASK];
 YKQ YKqueues[MAXQUEUES];
-YKEVENT YKqueues[MAXEVENT];
+YKEVENT YKevents[MAXEVENT];
 
 int YKIdleStk[IDLE_STACKSIZE];
 
@@ -56,7 +54,7 @@ void YKIdleTask(void){
 YKEVENT *YKEventCreate(unsigned initialValue){
 	YKEVENT *etemp;
 	YKEnterMutex();
-	etemp = &YKqueues[YKqueueCount];
+	etemp = &YKevents[YKeventCount];
 	etemp->value = initialValue;
 	etemp->pendHead = NULL;
 	etemp->pendTail = NULL;
@@ -90,6 +88,7 @@ unsigned YKEventPend(YKEVENT *event, unsigned eventMask, int waitMode){
 		YKinsertUnsorted(item, &(event->pendHead), &(event->pendTail));
 		item->eventWaitMode = waitMode;
 		item->eventMask = eventMask;
+		//printEvent(event);
 		YKScheduler(1);
 	}
 	YKExitMutex();
@@ -99,18 +98,19 @@ unsigned YKEventPend(YKEVENT *event, unsigned eventMask, int waitMode){
 void YKEventSet(YKEVENT *event, unsigned eventMask){
 	struct Task* temp;
 	struct Task* tempNext;
-	YKEnterMutex();	
-	event->value = eventMask;
+	YKEnterMutex();
+	//bug was here, set event value to eventMask	
+	event->value = event->value | eventMask;
 	temp = event->pendHead;
 	while (temp != NULL){
 		if (temp->eventWaitMode == EVENT_WAIT_ALL){
-			if (temp->eventMask != (temp->eventMask & eventMask)){
+			if (temp->eventMask != (temp->eventMask & event->value)){
 				temp = temp->next;			
 				continue;
 			}
 		}
 		else {
-			if ((temp->eventMask & eventMask) == 0){
+			if ((temp->eventMask & event->value) == 0){
 				temp = temp->next;				
 				continue;
 			}
@@ -120,6 +120,7 @@ void YKEventSet(YKEVENT *event, unsigned eventMask){
 		YKinsertSorted(temp, &readyHead);
 		temp = tempNext;
 	}
+	//printEvent(event);
 	if (YKIsrDepth == 0){	
 		YKScheduler(1);
 	}
@@ -346,7 +347,7 @@ void YKDelayTask(unsigned count){
 		item = YKRunningTask;
 		item->taskDelay = count;
 		YKpopSorted(&readyHead);
-		YKinsertBlocked(item);
+		YKinsertUnsorted(item, &blockedHead, &blockedTail);
 		YKScheduler(1); 
 		YKExitMutex();
 	}
@@ -428,7 +429,7 @@ void YKTickHandler(void){
 		tempNext = temp->next;
 		(temp->taskDelay)--;
 		if (temp->taskDelay <= 0){
-			YKremoveBlocked(temp);
+			YKremoveUnsorted(temp, &blockedHead, &blockedTail);
 			YKinsertSorted(temp, &readyHead);
 		}
 		if (tempNext != NULL){
@@ -587,7 +588,7 @@ void printStack(struct Task* item){
 
 void printList(struct Task* listHead, char *string){
 	struct Task* temp;
-	printNewline();
+	printNewLine();
 	printString(string);
 	printNewLine();
 	temp = listHead;
@@ -598,6 +599,8 @@ void printList(struct Task* listHead, char *string){
 		printWord(temp->taskDelay);
 		printString(", 0x");
 		printWord(temp->eventMask);
+		printString(", ");
+		printInt(temp->eventWaitMode);
 		printString("] ");
 		temp = temp->next;
 	}
@@ -605,8 +608,8 @@ void printList(struct Task* listHead, char *string){
 }
 
 void printEvent(YKEVENT *event){
-	printString("Printing Event\n\r");
-	printString("Value: 0x
+	printString("Printing Event:\n\r");
+	printString("Value: 0x");
 	printWord(event->value);
 	printList(event->pendHead, "EventList:");
 }

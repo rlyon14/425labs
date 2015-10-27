@@ -5,12 +5,10 @@ Description: Application code for EE 425 lab 7 (Event flags)
 */
 
 #include "clib.h"
-#include "yakk.h"                     /* contains kernel definitions */
-#include "lab7defs.h"
+#include "yakk.h" 
+#include "yaku.h"                    /* contains kernel definitions */
 
 #define TASK_STACK_SIZE   512         /* stack size in words */
-
-
 
 YKEVENT *charEvent;
 YKEVENT *numEvent;

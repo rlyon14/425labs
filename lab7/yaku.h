@@ -3,7 +3,7 @@
 #define MAXSEM 10
 #define MAXQUEUES 3
 #define MSGARRAYSIZE 20
-#define MAXEVENT 3
+#define MAXEVENT 6
 
 #define EVENT_A_KEY  0x1
 #define EVENT_B_KEY  0x2

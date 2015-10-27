@@ -1,4 +1,7 @@
 
+#define EVENT_WAIT_ANY 1
+#define EVENT_WAIT_ALL 0
+
 struct Task {
 	int *taskSP;
 	unsigned char taskPriority;
@@ -100,3 +103,5 @@ void printSem(YKSEM *semaphore);
 void printStack(struct Task* item);
 
 void printList(struct Task* listHead, char *string);
+
+void printEvent(YKEVENT *event);
