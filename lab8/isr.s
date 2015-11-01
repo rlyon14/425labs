@@ -70,12 +70,32 @@ isr_simptris_touchdown:
 	pop	ax
 	iret	
 isr_simptris_recievedCmd:
-	push	ax	
-	mov	[SMreceivedFlag], 1
+	push	bp
+	push	si
+	push	di
+	push	ds
+	push	es
+	push	dx
+	push	cx
+	push	bx
+	push	ax
+	call	YKEnterISR
+	sti
+	call	SMrecievedCmdHdlr
+	cli
 	mov	al, 0x20
 	out	0x20, al
+	call	YKExitISR	
 	pop	ax
-	iret	
+	pop	bx
+	pop	cx
+	pop	dx
+	pop	es
+	pop	ds
+	pop	di
+	pop	si
+	pop	bp	
+	iret
 isr_simptris_newpeice:
 	push	bp
 	push	si	

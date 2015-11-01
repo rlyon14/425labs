@@ -5,7 +5,6 @@
 #define NULL 0
 #define IDLE_STACKSIZE 256
 
-
 int* YKsave;
 int* YKrestore;
 
@@ -80,9 +79,9 @@ unsigned YKEventPend(YKEVENT *event, unsigned eventMask, int waitMode){
 			return event->value;
 		}
 	}
-
-	item = YKpopSorted(&readyHead);
-	if (item != NULL) {
+	
+	if (readyHead != NULL){
+		item = YKpopSorted(&readyHead);
 		YKinsertUnsorted(item, &(event->pendHead), &(event->pendTail));
 		item->eventWaitMode = waitMode;
 		item->eventMask = eventMask;

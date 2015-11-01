@@ -17,45 +17,69 @@ void *cmdQ[MSGQSIZE];
 YKQ *pieceQPtr; 
 YKQ *cmdQPtr;
 
+YKSEM *SemPtr;
+
 /*a stack for each task */
 int SMcdmTaskStk[TASK_STACK_SIZE];
 int SMpieceTaskStk[TASK_STACK_SIZE];
 int SMStatTaskStk[TASK_STACK_SIZE];
 
-unsigned SMupperRow;
-unsigned SMlowerRow;
-unsigned newPieceNext;
+unsigned SMupperRowLeft;
+unsigned SMlowerRowLeft;
+unsigned SMupperRowRight;
+unsigned SMlowerRowRight;
+unsigned pieceNext;
+unsigned cmdNext;
 
 void SMgameOverHdlr(void){
 	printString("\n\rGameOver\n\r");
 }
 
 void SMnewpieceHdlr(void){
-	pieceArray[newPieceNext].pieceID = NewPieceID;
-	pieceArray[newPieceNext].type = NewPieceType;
-	pieceArray[newPieceNext].orientation = NewPieceOrientation;
-	pieceArray[newPieceNext].column = NewPieceColumn;
+	pieceArray[pieceNext].pieceID = NewPieceID;
+	pieceArray[pieceNext].type = NewPieceType;
+	pieceArray[pieceNext].orientation = NewPieceOrientation;
+	pieceArray[pieceNext].column = NewPieceColumn;
 	
-	if (YKQPost(pieceQPtr, (void *) &(pieceArray[next])) == 0)
-		printString("\n\rnewPieceQ overflow!\n\r");
-	else if (++next >= MSGARRAYSIZE)
-		next = 0;
+	if (YKQPost(pieceQPtr, (void *) &(pieceArray[pieceNext])) == 0)
+		printString("\n\rPieceQ overflow!\n\r");
+	else if (++pieceNext >= MSGARRAYSIZE)
+		piecenext = 0;
+}
+
+void SMrecievedCmdHdlr(void){
+	YKSemPost(SemPtr);
 }
 
 /* pulls pieces from SMpieceQueue and puts commands in SMcmdQueue*/
 void SMpieceTask(void)
-	//tmp = (struct msg *) YKQPend(MsgQPtr); /* get next msg */
+	struct SMpiece* ptemp;
     while(1) {
+		ptemp = (struct msg *) YKQPend(pieceQPtr); 
+		
 
+
+		cmdArray[cmdNext].pieceID = 
+		cmdArray[cmdNext].slide1 = 
+		cmdArray[cmdNext].rotate =
+		cmdArray[cmdNext].slide2 =
+		if (YKQPost(cmdQPtr, (void *) &(cmdArray[cmdNext])) == 0)
+			printString("\n\rcmdQ overflow!\n\r");
+		else if (++cmdNext >= MSGARRAYSIZE)
+			cmdnext = 0;
     }
 }
 
 /* sends commands to simptris from SMcmdQueue*/
 void SMcmdTask(void)    
 {
-
+	struct SMcmd* ctemp;
     while(1) {
-
+		ctemp = (struct msg *) YKQPend(cmdQPtr); 
+		for (# of commands in ctemp){
+        	YKSemPend(SemPtr);
+       		sendcmd();			
+		}
     }
 }
 
@@ -106,10 +130,12 @@ void main(void)
 	YKInitialize();
 	SMupperRow = 0;
 	SMlowerRow = 0;
-	newPieceNext = 0;
+	pieceNext = 0;
+	cmdNext = 0;
 	SMreceivedFlag = 1;
 	pieceQPtr = YKQCreate(pieceQ, MSGQSIZE);
 	cmdQPtr = YKQCreate(cmdQ, MSGQSIZE);
+	SemPtr = YKSemCreate(1, "PSem");
     YKNewTask(SMStatTask, (void *) &SMStatTaskStk[TASK_STACK_SIZE], 0);
     
     YKRun();
