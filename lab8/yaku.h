@@ -24,3 +24,4 @@ struct SMcmd
 	int rotate;
 	int slide2;
 };
+
