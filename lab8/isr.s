@@ -108,7 +108,7 @@ isr_simptris_newpeice:
 	push	ax
 	call	YKEnterISR
 	;sti don't nest newpeice interrupts
-	call	SMnewPeiceHdlr
+	call	SMnewpieceHdlr
 	cli
 	mov	al, 0x20
 	out	0x20, al
