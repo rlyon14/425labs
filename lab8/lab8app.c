@@ -137,6 +137,8 @@ void SMpieceTask(void) {
 	int tCmdNum;
 	int tSlot;
 	int k;
+	SeedSimptris(SIMPSEED);
+	StartSimptris();
     	while(1) {
 		ptemp = (struct SMpiece*) YKQPend(pieceQPtr);
 
@@ -159,7 +161,7 @@ void SMpieceTask(void) {
 				printString("\n\rDefault hit (straight piece)\n\r"); 
 			}		
 
-			getCmds(ptemp, destSlot);
+			tCmdNum = getCmds(ptemp, destSlot);
 
 			//drop peice onto rows
 			if ((upperRow | slotLrow[destSlot]) == upperRow) {
@@ -213,7 +215,7 @@ void SMpieceTask(void) {
 			else if ((lowerRow & RIGHTMASK) == 0x06) {destSlot = 9;}
 			else { printString("\n\rDefault hit (corner piece)\n\r");}
 			
-			getCmds(ptemp, destSlot);
+			tCmdNum = getCmds(ptemp, destSlot);
 
 			lowerRow = lowerRow | slotLrow[destSlot];
 			upperRow = upperRow | slotUrow[destSlot];
@@ -234,38 +236,31 @@ void SMpieceTask(void) {
 			}
 		}		
 		YKEnterMutex();
-
+		for (k = 0; k < 5000; k++){
+			k--;
+			k++;
+		}
+		/*
+		printNewLine();
+		printString("Slot: ");
+		printInt(destSlot);
+		printNewLine();
+		printWord(upperRow);
+		printNewLine();
+		printWord(lowerRow);
+		printNewLine();
+		printString("LeftBlock: ");
+		printInt(leftBlock);
+		printNewLine();
+		printString("RightBlock: ");
+		printInt(rightBlock);
+		printNewLine();
+		*/
+		
 		cmdArray[cmdNext].pieceID = ptemp->pieceID;
 		cmdArray[cmdNext].slide1 = tmpCmd.slide1;
 		cmdArray[cmdNext].rotate = tmpCmd.rotate;
 		cmdArray[cmdNext].slide2 = tmpCmd.slide2;
-		/*
-		printString("PieceID (cur): ");
-		printInt(ptemp->pieceID);
-		printString(", Orient: ");
-		printInt(ptemp->orientation);
-		printString(", column: ");
-		printInt(ptemp->column);
-		printNewLine();
-		printString("PieceID (dest): ");
-		printInt(ptemp->pieceID);
-		printString(", Slide1: ");
-		printInt(cmdArray[cmdNext].slide1);
-		printString(", rotate: ");
-		printInt(cmdArray[cmdNext].rotate);
-		printString(", Slide2: ");
-		printInt(cmdArray[cmdNext].slide2);
-		printNewLine();
-		printString("Upper Row: ");
-		printWord(upperRow);
-		printString(", Lower Row: ");
-		printWord(lowerRow);
-		printString(", leftBlock: ");
-		printInt(leftBlock);
-		printString(", rightBlock: ");
-		printInt(rightBlock);
-		printNewLine();
-		*/
 		if (YKQPost(cmdQPtr, (void *) &(cmdArray[cmdNext])) == 0)
 			printString("\n\rcmdQ overflow!\n\r");
 		else if (++cmdNext >= MSGARRAYSIZE)
@@ -347,7 +342,6 @@ void SMStatTask(void)           /* tracks statistics */
         YKEnterMutex();
         switchCount = YKCtxSwCount;
         idleCount = YKIdleCount;
-        YKExitMutex();
         
         printString("<CS: ");
         printInt((int)switchCount);
@@ -356,7 +350,6 @@ void SMStatTask(void)           /* tracks statistics */
         printInt(100-tmp);
         printString(">\r\n");
         
-        YKEnterMutex();
         YKCtxSwCount = 0;
         YKIdleCount = 0;
         YKExitMutex();
@@ -376,7 +369,5 @@ void main(void)
 	cmdQPtr = YKQCreate(cmdQ, MSGQSIZE);
 	SemPtr = YKSemCreate(1, "PSem");
 	YKNewTask(SMStatTask, (void *) &SMStatTaskStk[TASK_STACK_SIZE], 0);
-	SeedSimptris(75301);
-	StartSimptris();
 	YKRun();
 }

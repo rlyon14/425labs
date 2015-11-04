@@ -1,7 +1,9 @@
+#define SIMPSEED 10947
+
+
 
 #define LEFTMASK 0x38  //111 000
 #define RIGHTMASK 0x07 //000 111
-
 #define SLOTL0 0x38 //11 1000
 #define SLOTU0 0x00
 #define SLOTL1 0x07 //00 0111

@@ -42,9 +42,8 @@ int YKIdleStk[IDLE_STACKSIZE];
 void YKIdleTask(void){
 	while(1){
 		YKIdleCount++;
-		if(YKIdleVar){
-			YKIdleVar++;
-		}
+		YKIdleVar++;
+		YKIdleVar--;
 	}
 }
 
