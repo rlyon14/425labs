@@ -84,7 +84,12 @@ int getCmds(struct SMpiece* piece, unsigned slotNum){
 	
 	tmpCmd.slide2 = 0;
 	tmpCmd.slide1 = (slotColumn[slotNum])-column;
-	cmdNum = cmdNum + (-1*(tmpCmd.slide1));
+	if (tmpCmd.slide1 < 0){
+		cmdNum = cmdNum + (-1*(tmpCmd.slide1));
+	}
+	else {
+		cmdNum = cmdNum + tmpCmd.slide1;
+	}
 	
 	if (tmpCmd.rotate != 0){
 		if (slotColumn[slotNum] == 0) { 
@@ -97,6 +102,11 @@ int getCmds(struct SMpiece* piece, unsigned slotNum){
 				tmpCmd.slide1 = -1;
 				tmpCmd.slide2 = -4;	
 			}
+			else {
+				//forgot this else block
+				tmpCmd.slide2 = tmpCmd.slide1;
+				tmpCmd.slide1 = 0;
+			}
 		}
 		if (slotColumn[slotNum] == 5) {
 			if (column == 0) {
@@ -107,6 +117,11 @@ int getCmds(struct SMpiece* piece, unsigned slotNum){
 				tmpCmd.slide1 = -1;
 				tmpCmd.slide2 = 1;
 				cmdNum = cmdNum +2;	
+			}
+			else {
+				//forgot this else block
+				tmpCmd.slide2 = tmpCmd.slide1;
+				tmpCmd.slide1 = 0;
 			}
 		}
 	}
@@ -126,7 +141,7 @@ void SMpieceTask(void) {
 		ptemp = (struct SMpiece*) YKQPend(pieceQPtr);
 
 		/*straight piece*/
-		if (ptemp->pieceID == 1)  { 
+		if (ptemp->type == 1)  { 
 			if (lowerRow == 0) {
 				tCmdNum = getCmds(ptemp, 0);
 				if (getCmds(ptemp, 1) < tCmdNum){
@@ -140,21 +155,25 @@ void SMpieceTask(void) {
 			else if ((lowerRow & RIGHTMASK) == 0) {destSlot = 1;}
 			else if ((lowerRow & LEFTMASK) == 0x38) {destSlot = 0;}
 			else if ((lowerRow & RIGHTMASK) == 0x07) {destSlot = 1;}
-			else { printString("\n\rDefault hit (straight piece)\n\r"); }		
+			else { 
+				printString("\n\rDefault hit (straight piece)\n\r"); 
+			}		
 
 			getCmds(ptemp, destSlot);
 
-			if (upperRow & LEFTMASK == 0x38) {
-				leftBlock++;				
-			}
-			else if ((upperRow & RIGHTMASK) == 0x07) {
-				rightBlock++;
+			if ((upperRow | slotLrow[destSlot]) == upperRow) {
+				if (destSlot == 0) { leftBlock++; }
+				else { rightBlock++; }			
 			}
 			else if ((lowerRow | slotLrow[destSlot]) == lowerRow) {
 				upperRow = upperRow | slotLrow[destSlot];
 			}
 			else {
 				lowerRow = lowerRow | slotLrow[destSlot];
+			}
+			if (lowerRow == 0x3F) {
+				lowerRow = upperRow;
+				upperRow = 0;			
 			}			
 		}
 
@@ -209,7 +228,7 @@ void SMpieceTask(void) {
 						rightBlock--; 
 						upperRow = 0x07;
 					}
-					if (leftBlock > 0)  { 
+					else if (leftBlock > 0)  { 
 						leftBlock--;
 						upperRow = 0x38;
 					}
@@ -217,10 +236,38 @@ void SMpieceTask(void) {
 			}		
 		}
 		YKEnterMutex();
+
 		cmdArray[cmdNext].pieceID = ptemp->pieceID;
 		cmdArray[cmdNext].slide1 = tmpCmd.slide1;
 		cmdArray[cmdNext].rotate = tmpCmd.rotate;
 		cmdArray[cmdNext].slide2 = tmpCmd.slide2;
+		/*
+		printString("PieceID (cur): ");
+		printInt(ptemp->pieceID);
+		printString(", Orient: ");
+		printInt(ptemp->orientation);
+		printString(", column: ");
+		printInt(ptemp->column);
+		printNewLine();
+		printString("PieceID (dest): ");
+		printInt(ptemp->pieceID);
+		printString(", Slide1: ");
+		printInt(cmdArray[cmdNext].slide1);
+		printString(", rotate: ");
+		printInt(cmdArray[cmdNext].rotate);
+		printString(", Slide2: ");
+		printInt(cmdArray[cmdNext].slide2);
+		printNewLine();
+		printString("Upper Row: ");
+		printWord(upperRow);
+		printString(", Lower Row: ");
+		printWord(lowerRow);
+		printString(", leftBlock: ");
+		printInt(leftBlock);
+		printString(", rightBlock: ");
+		printInt(rightBlock);
+		printNewLine();
+		*/
 		if (YKQPost(cmdQPtr, (void *) &(cmdArray[cmdNext])) == 0)
 			printString("\n\rcmdQ overflow!\n\r");
 		else if (++cmdNext >= MSGARRAYSIZE)
@@ -331,7 +378,7 @@ void main(void)
 	cmdQPtr = YKQCreate(cmdQ, MSGQSIZE);
 	SemPtr = YKSemCreate(1, "PSem");
     YKNewTask(SMStatTask, (void *) &SMStatTaskStk[TASK_STACK_SIZE], 0);
-    SeedSimptris(15);
+    SeedSimptris(75301);
 	StartSimptris();
     YKRun();
 }
