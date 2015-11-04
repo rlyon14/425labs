@@ -137,7 +137,7 @@ void SMpieceTask(void) {
 	int tCmdNum;
 	int tSlot;
 	int k;
-    while(1) {
+    	while(1) {
 		ptemp = (struct SMpiece*) YKQPend(pieceQPtr);
 
 		/*straight piece*/
@@ -161,6 +161,7 @@ void SMpieceTask(void) {
 
 			getCmds(ptemp, destSlot);
 
+			//drop peice onto rows
 			if ((upperRow | slotLrow[destSlot]) == upperRow) {
 				if (destSlot == 0) { leftBlock++; }
 				else { rightBlock++; }			
@@ -170,10 +171,6 @@ void SMpieceTask(void) {
 			}
 			else {
 				lowerRow = lowerRow | slotLrow[destSlot];
-			}
-			if (lowerRow == 0x3F) {
-				lowerRow = upperRow;
-				upperRow = 0;			
 			}			
 		}
 
@@ -220,21 +217,22 @@ void SMpieceTask(void) {
 
 			lowerRow = lowerRow | slotLrow[destSlot];
 			upperRow = upperRow | slotUrow[destSlot];
-			for (k = 0; k < 2; k ++) {
-				if (lowerRow == 0x3F) {
-					lowerRow = upperRow;
-					upperRow = 0;
-					if (rightBlock > 0) { 
-						rightBlock--; 
-						upperRow = 0x07;
-					}
-					else if (leftBlock > 0)  { 
-						leftBlock--;
-						upperRow = 0x38;
-					}
-				}
-			}		
 		}
+		//clear up to two rows
+		for (k = 0; k < 2; k ++) {
+			if (lowerRow == 0x3F) {
+				lowerRow = upperRow;
+				upperRow = 0;
+				if (rightBlock > 0) { 
+					rightBlock--; 
+					upperRow = 0x07;
+				}
+				else if (leftBlock > 0)  { 
+					leftBlock--;
+					upperRow = 0x38;
+				}
+			}
+		}		
 		YKEnterMutex();
 
 		cmdArray[cmdNext].pieceID = ptemp->pieceID;
@@ -283,7 +281,7 @@ void SMcmdTask(void) {
 	int slide;
 	int direction;
 	int rotate;
-    while(1) {
+   	while(1) {
 		ctemp = (struct SMcmd*) YKQPend(cmdQPtr);
 		if (ctemp->slide1 != 0){
 			slide = ctemp->slide1;
@@ -321,7 +319,7 @@ void SMcmdTask(void) {
 			   	SlidePiece(ctemp->pieceID, direction);			
 			}
 		}
-    }
+    	}
 }
 
 
@@ -377,8 +375,8 @@ void main(void)
 	pieceQPtr = YKQCreate(pieceQ, MSGQSIZE);
 	cmdQPtr = YKQCreate(cmdQ, MSGQSIZE);
 	SemPtr = YKSemCreate(1, "PSem");
-    YKNewTask(SMStatTask, (void *) &SMStatTaskStk[TASK_STACK_SIZE], 0);
-    SeedSimptris(75301);
+	YKNewTask(SMStatTask, (void *) &SMStatTaskStk[TASK_STACK_SIZE], 0);
+	SeedSimptris(75301);
 	StartSimptris();
-    YKRun();
+	YKRun();
 }
