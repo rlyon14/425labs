@@ -18,5 +18,5 @@ clean:
 
 .PHONY: export
 export:
-	export PATH=$$PATH:/ee2/ee525/bin
+	export PATH=$$PATH:/ee2/ee425/bin
 

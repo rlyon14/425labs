@@ -5,13 +5,8 @@ YKExitMutex:
 	sti
 	ret
 YKsaveContext:
+	cli
 	pushf
-	push	bx
-	add	sp, 2
-	mov	bx, sp
-	and	word[bx], 0xFDFF
-	sub	sp, 2
-	pop	bx
 	push	cs
 	push	word[bp+2]
 	push	word[bp]

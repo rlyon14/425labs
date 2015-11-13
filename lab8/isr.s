@@ -41,7 +41,6 @@ isr_tick:
 	push	bx
 	push	ax
 	call	YKEnterISR
-	;sti tick should never be interrupted
 	call	YKTickHandler
 	cli
 	mov	al, 0x20

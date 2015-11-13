@@ -1,10 +1,12 @@
 
+//kernel size definitions
 #define MAXTASK 10
 #define MAXSEM 10
 #define MAXQUEUES 3
-#define MSGARRAYSIZE 20
 #define MAXEVENT 6
 
+
+#define MSGARRAYSIZE 20
 #define EVENT_A_KEY  0x1
 #define EVENT_B_KEY  0x2
 #define EVENT_C_KEY  0x4
@@ -21,5 +23,3 @@ struct msg
     int tick;
     int data;
 };
-
-

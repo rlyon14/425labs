@@ -1,11 +1,22 @@
 
+#define EVENT_WAIT_ANY 1
+#define EVENT_WAIT_ALL 0
+
 struct Task {
 	int *taskSP;
 	unsigned char taskPriority;
 	unsigned int taskDelay;
 	struct Task* next;
 	struct Task* prev;
+	int eventWaitMode;
+	unsigned eventMask;
 };
+
+typedef struct {
+	unsigned value;
+	struct Task* pendHead;
+	struct Task* pendTail;
+} YKEVENT;
 
 typedef struct {
 	int value;
@@ -13,9 +24,37 @@ typedef struct {
 	char *string;
 } YKSEM;
 
+typedef struct {
+	int *nextEmpty;
+	int *oldest;
+	int *qEnd;
+	int *qStart;
+	int qSize;
+	int qCount;
+	struct Task* qBlockedHead;
+} YKQ;
+
 extern unsigned int YKTickCount;
 extern unsigned int YKCtxSwCount;
 extern unsigned int YKIdleCount;
+
+YKEVENT *YKEventCreate(unsigned initialValue);
+
+unsigned YKEventPend(YKEVENT *event, unsigned eventMask, int waitMode);
+
+void YKEventSet(YKEVENT *event, unsigned eventMask);
+
+void YKEventReset(YKEVENT *event, unsigned eventMask);
+
+void printYKQ(YKQ *queue);
+
+void printMsgQueue(YKQ *queue);
+
+int YKQPost(YKQ *queue, void *msg);
+
+void *YKQPend(YKQ *queue);
+
+YKQ *YKQCreate(void **start, unsigned size);
 
 void YKsaveSP(void);
 
@@ -55,12 +94,7 @@ void YKinsertSorted(struct Task* item, struct Task** listHead);
 
 struct Task* YKpopSorted (struct Task** listHead);
 
-void YKremoveBlocked (struct Task* item);
+void YKremoveUnsorted (struct Task* item, struct Task** listHead, struct Task** listTail);
 
-void YKinsertBlocked(struct Task* item);
+void YKinsertUnsorted(struct Task* item, struct Task** listHead, struct Task** listTail);
 
-void printSem(YKSEM *semaphore);
-
-void printStack(struct Task* item);
-
-void printLists(void);

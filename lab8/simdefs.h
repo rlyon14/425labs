@@ -1,4 +1,4 @@
-#define SIMPSEED 10947
+#define SIMPSEED 13
 
 
 
@@ -23,4 +23,4 @@
 #define SLOTL8 0x06 //00 0110
 #define SLOTU8 0x04 //00 0100
 #define SLOTL9 0x01 //00 0001
-#define SLOTU9 0x03 //00 0011
+#define SLOTU9 0x03 //00 0011 

@@ -98,10 +98,3 @@ void YKremoveUnsorted (struct Task* item, struct Task** listHead, struct Task** 
 
 void YKinsertUnsorted(struct Task* item, struct Task** listHead, struct Task** listTail);
 
-void printSem(YKSEM *semaphore);
-
-void printStack(struct Task* item);
-
-void printList(struct Task* listHead, char *string);
-
-void printEvent(YKEVENT *event);

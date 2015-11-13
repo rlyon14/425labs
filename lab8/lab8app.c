@@ -236,10 +236,7 @@ void SMpieceTask(void) {
 			}
 		}		
 		YKEnterMutex();
-		for (k = 0; k < 5000; k++){
-			k--;
-			k++;
-		}
+
 		/*
 		printNewLine();
 		printString("Slot: ");
