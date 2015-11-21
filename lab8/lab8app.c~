@@ -143,6 +143,7 @@ void SMpieceTask(void) {
 	SeedSimptris(SIMPSEED);
 	StartSimptris();
     	while(1) {
+		if (score < 406){
 		ptemp = (struct SMpiece*) YKQPend(pieceQPtr);
 
 		/*straight piece*/
@@ -256,7 +257,7 @@ void SMpieceTask(void) {
 		else if (++cmdNext >= MSGARRAYSIZE)
 			cmdNext = 0;
 		YKExitMutex();
-    	
+    	}
 	}
 }
 

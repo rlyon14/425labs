@@ -1,4 +1,4 @@
-#define SIMPSEED 10947
+#define SIMPSEED 13
 
 #define LEFTMASK 0x38  //111 000
 #define RIGHTMASK 0x07 //000 111
