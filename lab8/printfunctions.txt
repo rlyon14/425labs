@@ -1,0 +1,117 @@
+void printMsgQueue(YKQ *queue){
+	int *tempMsg;
+	int k;
+	YKEnterMutex();
+	printString("PrintingQueue:\n\r");
+	k = 0;
+	tempMsg = (int*)queue->oldest;
+	if (tempMsg != NULL) {
+		for (k; k < (queue->qCount); k++){
+			printString("[");
+			printWord((int) tempMsg);
+			printString("]: "); 
+			printInt((int)*tempMsg);
+			printString(": ");
+			printInt(*((int*)*tempMsg));
+			printString(", ");
+			tempMsg++;
+			if (((int*) tempMsg) > (queue->qEnd)){
+				tempMsg = queue->qStart;
+			}
+		}
+	printNewLine();
+	}
+	YKExitMutex();
+}
+
+void printSem(YKSEM *semaphore){
+	struct Task *temp;
+	if (semaphore != NULL){
+		printNewLine();
+		printString(semaphore->string);
+		printString(": ");
+		printInt(semaphore->value);
+		printNewLine();
+		printString("PendList: \n\r");
+		temp = semaphore->pendHead;
+		while (temp != NULL){
+			printString("[0x");
+			printByte(temp->taskPriority);
+			printString(", ");
+			printWord(temp->taskDelay);
+			printString(", ");
+			printWord((int)temp->taskSP);
+			printString("] ");
+			temp = temp->next;	
+		}
+		printNewLine();
+	}
+}
+
+void printStack(struct Task* item){
+	int k;
+	int *tempSP;
+	k = 0;
+	if (item != NULL){
+		tempSP = item->taskSP;
+		printString("\n\rPrinting Stack:\n\r");
+		for (k; k<12; k++){
+			printWord((int)tempSP);
+			printString(": [");
+			printWord(*tempSP);
+			printString("]\n\r");
+			tempSP = tempSP+1;
+		}
+	}
+	else {
+		printString("\n\rPrintStack: item is NULL");
+
+	}	
+}
+
+void printList(struct Task* listHead, char *string){
+	struct Task* temp;
+	printNewLine();
+	printString(string);
+	printNewLine();
+	temp = listHead;
+	while(temp != NULL){
+		printString("[0x");
+		printByte(temp->taskPriority);
+		printString(", ");
+		printWord(temp->taskDelay);
+		printString(", 0x");
+		printWord(temp->eventMask);
+		printString(", ");
+		printInt(temp->eventWaitMode);
+		printString("] ");
+		temp = temp->next;
+	}
+	printNewLine();
+}
+
+void printEvent(YKEVENT *event){
+	printString("Printing Event:\n\r");
+	printString("Value: 0x");
+	printWord(event->value);
+	printList(event->pendHead, "EventList:");
+}
+
+void printYKQ(YKQ *queue){
+	YKEnterMutex();
+	printString("Printing YKQ:\n\r");
+	printString("NextEmpty: "); 
+	printWord((int)queue->nextEmpty);
+	printString(", oldest: ");
+	printWord((int)queue->oldest);
+	printString(", size: ");
+	printInt(queue->qSize);
+	printString(", count: ");
+	printInt(queue->qCount);
+	printString(", qStart: "); 
+	printWord((int)queue->qStart);
+	printString(", qEnd: ");
+	printWord((int)queue->qEnd);
+	printNewLine();
+	YKExitMutex();
+}
