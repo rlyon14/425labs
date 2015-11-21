@@ -1,12 +1,30 @@
 
-#include "clib.h"
-#include "yakk.h" 
-#include "yaku.h"                    
-#include "simptris.h"
 
-#define TASK_STACK_SIZE   512  
-#define MSGQSIZE 10  
-#define MSGARRAYSIZE 10
+#include "stdio.h"
+#define CNR0ROW1 0x20
+#define CNR0ROW0 0x30
+#define CNR1ROW1 0x20
+#define CNR1ROW0 0x60
+#define CNR2ROW1 0x60
+#define CNR2ROW0 0x20
+#define CNR3ROW1 0x30
+#define CNR3ROW0 0x20
+#define STR0ROW2 0x0
+#define STR0ROW1 0x0
+#define STR0ROW0 0x70
+#define STR1ROW2 0x20
+#define STR1ROW1 0x20
+#define STR1ROW0 0x20
+
+#define MAXMOVES 2
+
+struct SMPiece {
+	unsigned type;
+	int rotation;
+	int column;
+	unsigned score;
+	unsigned commands;
+};
 
 unsigned board[8] = {0,0,0,0,0,0,0,0};
 
@@ -16,46 +34,9 @@ unsigned strRow2[2]= 	{STR0ROW2, STR1ROW2};
 unsigned strRow1[2]= 	{STR0ROW1, STR1ROW1};
 unsigned strRow0[2]= 	{STR0ROW0, STR1ROW0};
 unsigned UsedSlots[4];
-unsigned pieceNext;
-unsigned cmdNext;
-
-struct SMPiece pieceArray[MSGARRAYSIZE];
-struct SMPiece cmdArray[MSGARRAYSIZE];
-void *pieceQ[MSGQSIZE];
-void *cmdQ[MSGQSIZE];        
-YKQ *pieceQPtr; 
-YKQ *cmdQPtr;
-
-YKSEM *SemPtr;
-
-/*a stack for each task */
-int SMcmdTaskStk[TASK_STACK_SIZE];
-int SMpieceTaskStk[TASK_STACK_SIZE];
-int SMStatTaskStk[TASK_STACK_SIZE];
 
 struct SMPiece failSlot;
 struct SMPiece tempSlot;
-
-void SMgameOverHdlr(void){
-	printString("\n\rGame Over!\n\r");
-	exit(0);
-}
-
-void SMnewpieceHdlr(void){
-	pieceArray[pieceNext].pieceID = NewPieceID;
-	pieceArray[pieceNext].type = NewPieceType;
-	pieceArray[pieceNext].rotation = NewPieceOrientation;
-	pieceArray[pieceNext].column = NewPieceColumn;
-	
-	if (YKQPost(pieceQPtr, (void *) &(pieceArray[pieceNext])) == 0)
-		printString("\n\rPieceQ overflow!\n\r");
-	else if (++pieceNext >= MSGARRAYSIZE)
-		pieceNext = 0;
-}
-
-void SMrecievedCmdHdlr(void){
-	YKSemPost(SemPtr); 
-}
 
 struct SMPiece fitPiece(unsigned type, int rotation, int column, int depth, unsigned commands) {
 	unsigned k;
@@ -152,6 +133,9 @@ struct SMPiece fitPiece(unsigned type, int rotation, int column, int depth, unsi
 	return minSlot;	
 }
 
+
+
+
 void buildBoard(unsigned piecetype, unsigned rotation, unsigned column){
 	unsigned pieceRow0;
 	unsigned pieceRow1;
@@ -191,117 +175,57 @@ void buildBoard(unsigned piecetype, unsigned rotation, unsigned column){
 	}
 }
 
-/* pulls pieces from SMpieceQueue and puts commands in SMcmdQueue*/
-void SMpieceTask(void) {
-	struct SMPiece* ptemp;
-	struct SMPiece  cmdtemp;
-	int j;
-	SeedSimptris(SIMPSEED);
-	StartSimptris();
-    	while(1) {
-		for (j = 0; j <=3; j++){
-			UsedSlots[j] = 0;
-		}
-		ptemp = (struct SMPiece*) YKQPend(pieceQPtr);
-		
-		YKEnterMutex();	
-		cmdtemp = fitPiece(ptemp->type, ptemp->rotation, ptemp->column, 0, 0);
-		buildBoard(ptemp->type, cmdtemp.rotation, cmdtemp.column);
-		cmdArray[cmdNext].pieceID = ptemp->pieceID;
-		cmdArray[cmdNext].commands = cmdtmp.commands;
-		
-		if (YKQPost(cmdQPtr, (void *) &(cmdArray[cmdNext])) == 0)
-			printString("\n\rcmdQ overflow!\n\r");
-		else if (++cmdNext >= MSGARRAYSIZE)
-			cmdNext = 0;
-		YKExitMutex();
-    }
-}
-
-/* sends commands to simptris from SMcmdQueue*/
-void SMcmdTask(void) {   
-	struct SMcmd* ctemp;
-	unsigned moves;
-	unsigned pieceID;
-	int k;
-   	while(1) {
-		ctemp = (struct SMcmd*) YKQPend(cmdQPtr);
-		moves = ctemp->commands;
-		pieceID = ctemp->pieceID;
-		for (k = 0; k <= MAXMOVES; k++){
-			if (k > 0) { moves = moves >> 4; }
-			moves = moves & 0xF;
-			if (moves == 0) { break; }
-			YKSemPend(SemPtr);
-			switch (moves) {
-			case 1:
-				SlidePiece(pieceID, 0);
-				break;
-			case 2: 
-				SlidePiece(pieceID, 1);
-				break;
-			case 3: 
-				RotatePiece(pieceID, 1);
-				break;
-			default:
-				RotatePiece(pieceID, 0);
-				break;
+void printBoard(void){
+	int i; 
+	unsigned h;
+	for (i = 7; i >= 0; i--){
+		if (board[i] != 0){
+			printf("%d ", i);
+			for (h = 0; h <= 5; h++){
+				if ((board[i] & (0x020 >> h)) != 0) {
+					printf("#");
+				}
+				else {
+					printf("_");
+				}
 			}
+			printf("\n\r");
 		}
-	}	
+	}
+
+}
+
+//0 is corner, 1 is straight
+void playPiece(unsigned type, int rotation, int column){
+	struct SMPiece slot;
+	int j;
+	for (j = 0; j <=3; j++){
+		UsedSlots[j] = 0;
+	}
+
+	slot = fitPiece(type, rotation, column, 0, 0);
+
+	printf("Score: %#02x, rotation: %d, Column: %d\n\r", slot.score, slot.rotation, slot.column);
+	printf("Commands: %#02x\n\r", slot.commands);
+	buildBoard(type, slot.rotation, slot.column);
+	printBoard();
+}
+
+//0 is corner, 1 is straight
+void main (void) {
+	playPiece(1,1,1);
+	playPiece(1,1,1);
+	playPiece(1,1,1);
+	playPiece(1,1,1);
+	playPiece(1,1,2);
+	playPiece(1,1,2);
+	playPiece(1,1,3);
+	
 }
 
 
-void SMStatTask(void)           /* tracks statistics */
-{
-    unsigned max, switchCount, idleCount;
-    int tmp;
 
-    YKDelayTask(1);
-    printString("Starting Simtris\r\n");
-    printString("Determining CPU capacity\r\n");
-    YKDelayTask(1);
-    YKIdleCount = 0;
-    YKDelayTask(5);
-    max = YKIdleCount / 25;
-    YKIdleCount = 0;
 
-    YKNewTask(SMcmdTask, (void *) &SMcmdTaskStk[TASK_STACK_SIZE], 1);
-    YKNewTask(SMpieceTask, (void *) &SMpieceTaskStk[TASK_STACK_SIZE], 2);
-    
-    while (1)
-    {
-        YKDelayTask(20);
-        
-        YKEnterMutex();
-        switchCount = YKCtxSwCount;
-        idleCount = YKIdleCount;
-        
-        printString("<CS: ");
-        printInt((int)switchCount);
-        printString(", CPU: ");
-        tmp = (int) (idleCount/max);
-        printInt(100-tmp);
-        printString(">\r\n");
-        
-        YKCtxSwCount = 0;
-        YKIdleCount = 0;
-        YKExitMutex();
-    }
-}  
 
-void main(void)
-{
-	YKInitialize();
-	pieceNext = 0;
-	cmdNext = 0;
-	rightBlock = 0;
-	leftBlock = 0;
-	upperRow = 0;
-	lowerRow = 0;
-	pieceQPtr = YKQCreate(pieceQ, MSGQSIZE);
-	cmdQPtr = YKQCreate(cmdQ, MSGQSIZE);
-	SemPtr = YKSemCreate(1, "PSem");
-	YKNewTask(SMStatTask, (void *) &SMStatTaskStk[TASK_STACK_SIZE], 0);
-	YKRun();
-}
+
+
